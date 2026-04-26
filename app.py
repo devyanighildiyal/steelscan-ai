@@ -1,6 +1,6 @@
 """
-SteelScan AI — DualPath-AFNet Surface Defect Detection
-Streamlit Prototype Application
+SteelScan — DualPath-AFNet Surface Defect Detection
+Redesigned Streamlit Prototype
 Devyani Ghildiyal | Manipal University Jaipur | 229301091
 """
 
@@ -18,752 +18,501 @@ import matplotlib.patches as mpatches
 import warnings
 warnings.filterwarnings("ignore")
 
-# ─────────────────────────────────────────────────────────────
-# PAGE CONFIG — must be first Streamlit call
-# ─────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="SteelScan AI | Surface Defect Detection",
+    page_title="SteelScan — Surface Defect Detection",
     page_icon="🔩",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ─────────────────────────────────────────────────────────────
-# CUSTOM CSS
-# ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-  /* Import fonts */
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-  /* Main background */
-  .stApp { background-color: #0d1117; }
-  .main .block-container { padding-top: 2rem; max-width: 1200px; }
+html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
+.stApp { background-color: #0f1117; }
+.main .block-container { padding-top: 2.5rem; max-width: 1100px; }
+#MainMenu, footer, header { visibility: hidden; }
 
-  /* Hide Streamlit default elements */
-  #MainMenu { visibility: hidden; }
-  footer { visibility: hidden; }
-  header { visibility: hidden; }
+[data-testid="stSidebar"] {
+    background-color: #090b0f !important;
+    border-right: 1px solid #1e2330;
+}
+[data-testid="stSidebar"] .block-container { padding: 2rem 1.2rem 1rem; }
 
-  /* Metric cards */
-  [data-testid="metric-container"] {
-    background: #161b22;
-    border: 1px solid #30363d;
-    border-radius: 12px;
-    padding: 16px !important;
-  }
-  [data-testid="metric-container"] label {
-    color: #8b949e !important;
-    font-size: 11px !important;
-    font-family: 'DM Mono', monospace !important;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  [data-testid="metric-container"] [data-testid="metric-value"] {
-    color: #f0f6fc !important;
-    font-size: 24px !important;
-    font-weight: 700 !important;
-  }
+[data-testid="metric-container"] {
+    background: #13161f; border: 1px solid #1e2330; border-radius: 10px; padding: 14px !important;
+}
+[data-testid="metric-container"] label {
+    color: #5a6478 !important; font-size: 10px !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    letter-spacing: 0.1em; text-transform: uppercase;
+}
+[data-testid="metric-container"] [data-testid="metric-value"] {
+    color: #e8ecf4 !important; font-size: 22px !important; font-weight: 600 !important;
+}
 
-  /* Upload area */
-  [data-testid="stFileUploader"] {
-    background: #161b22;
-    border: 1.5px dashed #30363d;
-    border-radius: 12px;
-    padding: 8px;
-  }
-  [data-testid="stFileUploader"]:hover {
-    border-color: #4f9eff;
-    background: rgba(79,158,255,0.04);
-  }
+[data-testid="stFileUploader"] {
+    background: #13161f; border: 1.5px dashed #2a3040; border-radius: 12px; padding: 6px;
+}
 
-  /* Buttons */
-  .stButton > button {
-    background: #4f9eff !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 10px !important;
-    font-weight: 700 !important;
-    font-size: 15px !important;
-    padding: 12px 28px !important;
-    width: 100% !important;
-    transition: all 0.2s !important;
-  }
-  .stButton > button:hover {
-    background: #6aaeff !important;
-    transform: translateY(-1px);
-  }
+.stButton > button {
+    background: #3d7aed !important; color: white !important;
+    border: none !important; border-radius: 8px !important;
+    font-family: 'Inter', sans-serif !important; font-weight: 600 !important;
+    font-size: 14px !important; padding: 10px 24px !important; width: 100% !important;
+}
+.stButton > button:hover { background: #5490f5 !important; }
 
-  /* Sidebar */
-  [data-testid="stSidebar"] {
-    background-color: #0d1117 !important;
-    border-right: 1px solid #21262d;
-  }
-  [data-testid="stSidebar"] .block-container { padding: 1.5rem 1rem; }
+.streamlit-expanderHeader {
+    background: #13161f !important; border: 1px solid #1e2330 !important;
+    border-radius: 8px !important; color: #8892a4 !important;
+    font-family: 'Inter', sans-serif !important; font-size: 13px !important; font-weight: 500 !important;
+}
+.streamlit-expanderContent {
+    background: #13161f !important; border: 1px solid #1e2330 !important;
+    border-top: none !important; border-radius: 0 0 8px 8px !important;
+}
 
-  /* Progress bars */
-  .stProgress > div > div {
-    background: linear-gradient(90deg, #4f9eff, #2dd88a) !important;
-    border-radius: 4px !important;
-  }
-
-  /* Expander */
-  .streamlit-expanderHeader {
-    background: #161b22 !important;
-    border-radius: 8px !important;
-    color: #8b949e !important;
-    font-size: 13px !important;
-  }
-
-  /* Custom classes */
-  .result-card {
-    background: #161b22;
-    border: 1px solid #30363d;
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 16px;
-  }
-  .result-header {
-    font-family: 'Syne', sans-serif;
-    font-size: 28px;
-    font-weight: 800;
-    color: #f0f6fc;
-    text-transform: capitalize;
-    margin-bottom: 6px;
-  }
-  .result-conf { color: #2dd88a; font-size: 14px; margin-bottom: 16px; }
-  .section-title {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: #484f58;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-  }
-  .hero-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 36px;
-    font-weight: 800;
-    color: #f0f6fc;
-    line-height: 1.1;
-    margin-bottom: 8px;
-  }
-  .hero-sub { color: #8b949e; font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
-  .alpha-bar-cnn {
-    height: 10px; border-radius: 5px 0 0 5px;
-    background: #4f9eff; display: inline-block;
-    vertical-align: middle; transition: width 0.5s;
-  }
-  .alpha-bar-trans {
-    height: 10px; border-radius: 0 5px 5px 0;
-    background: #7b5cf0; display: inline-block;
-    vertical-align: middle; transition: width 0.5s;
-  }
-  .tag {
-    display: inline-block;
-    font-size: 11px; font-weight: 500;
-    padding: 3px 10px; border-radius: 20px;
-    font-family: 'DM Mono', monospace;
-  }
-  .tag-blue { background: rgba(79,158,255,0.12); color: #4f9eff; border: 1px solid rgba(79,158,255,0.25); }
-  .tag-purple { background: rgba(123,92,240,0.12); color: #7b5cf0; border: 1px solid rgba(123,92,240,0.25); }
-  .tag-green { background: rgba(45,216,138,0.12); color: #2dd88a; border: 1px solid rgba(45,216,138,0.25); }
-  .tag-amber { background: rgba(245,166,35,0.12); color: #f5a623; border: 1px solid rgba(245,166,35,0.25); }
-  .divider { border: none; border-top: 1px solid #21262d; margin: 20px 0; }
-  .info-box {
-    background: rgba(79,158,255,0.06);
-    border: 1px solid rgba(79,158,255,0.18);
-    border-radius: 10px; padding: 14px 16px;
-    font-size: 13px; color: #8b949e; line-height: 1.6;
-  }
-  .warning-box {
-    background: rgba(245,166,35,0.08);
-    border: 1px solid rgba(245,166,35,0.2);
-    border-radius: 10px; padding: 14px 16px;
-    font-size: 13px; color: #f5a623; line-height: 1.6;
-  }
+.app-title {
+    font-family: 'Inter', sans-serif; font-size: 44px; font-weight: 700;
+    color: #e8ecf4; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 8px;
+}
+.app-subtitle {
+    font-size: 13px; color: #5a6478; line-height: 1.7;
+    max-width: 660px; margin-bottom: 28px; font-style: italic;
+}
+.section-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #3d4658;
+    letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 10px;
+}
+.card {
+    background: #13161f; border: 1px solid #1e2330;
+    border-radius: 12px; padding: 20px 22px; margin-bottom: 14px;
+}
+.result-class {
+    font-family: 'Inter', sans-serif; font-size: 30px; font-weight: 700;
+    letter-spacing: -0.02em; text-transform: capitalize; margin-bottom: 4px;
+}
+.result-conf { font-size: 13px; color: #22c55e; margin-bottom: 14px; font-weight: 500; }
+.mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.tag {
+    display: inline-block; font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 500; padding: 3px 8px;
+    border-radius: 4px; letter-spacing: 0.04em;
+}
+.tag-blue   { background: rgba(61,122,237,0.12); color: #5b9cf6; border: 1px solid rgba(61,122,237,0.25); }
+.tag-purple { background: rgba(139,92,246,0.12); color: #a78bfa; border: 1px solid rgba(139,92,246,0.25); }
+.tag-green  { background: rgba(34,197,94,0.12);  color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
+.tag-gray   { background: rgba(90,100,120,0.12); color: #8892a4; border: 1px solid rgba(90,100,120,0.2); }
+.info-box {
+    background: rgba(61,122,237,0.07); border: 1px solid rgba(61,122,237,0.2);
+    border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #8892a4; line-height: 1.6;
+}
+.warn-box {
+    background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #fbbf24; line-height: 1.6;
+}
+.divider { border: none; border-top: 1px solid #1e2330; margin: 18px 0; }
+.arch-step {
+    display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px;
+    border-radius: 7px; border: 1px solid #1e2330; margin-bottom: 6px; background: #0d1017;
+}
+.arch-dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+.arch-text { font-size: 12px; color: #8892a4; line-height: 1.5; }
+.arch-text b { color: #c4cad6; font-weight: 500; }
+.empty-state {
+    background: #13161f; border: 1px solid #1e2330;
+    border-radius: 12px; padding: 60px 24px; text-align: center;
+}
 </style>
 """, unsafe_allow_html=True)
 
 
-# ─────────────────────────────────────────────────────────────
-# MODEL ARCHITECTURE (must match your training code exactly)
-# ─────────────────────────────────────────────────────────────
+# ── Model architecture ─────────────────────────────────────────────────────────
 class ChannelPyramidPooling(nn.Module):
     def __init__(self, in_channels_list, out_dim=256):
         super().__init__()
         self.projections = nn.ModuleList([
-            nn.Sequential(
-                nn.Conv2d(c, out_dim // 3, kernel_size=1, bias=False),
-                nn.BatchNorm2d(out_dim // 3),
-                nn.GELU()
-            ) for c in in_channels_list
+            nn.Sequential(nn.Conv2d(c, out_dim//3, 1, bias=False), nn.BatchNorm2d(out_dim//3), nn.GELU())
+            for c in in_channels_list
         ])
-        self.pool  = nn.AdaptiveAvgPool2d((4, 4))
-        fused_dim  = (out_dim // 3) * 3 * 4 * 4
-        self.fc    = nn.Sequential(nn.Linear(fused_dim, out_dim), nn.GELU(), nn.Dropout(0.2))
-        self.out_dim = out_dim
+        self.pool  = nn.AdaptiveAvgPool2d((4,4))
+        self.fc    = nn.Sequential(nn.Linear((out_dim//3)*3*16, out_dim), nn.GELU(), nn.Dropout(0.2))
 
-    def forward(self, features_list):
-        pooled = []
-        for proj, feat in zip(self.projections, features_list):
-            x = proj(feat); x = self.pool(x); pooled.append(x.flatten(1))
-        return self.fc(torch.cat(pooled, dim=1))
+    def forward(self, fl):
+        pooled = [self.pool(p(f)).flatten(1) for p,f in zip(self.projections,fl)]
+        return self.fc(torch.cat(pooled,1))
 
 
 class GlobalContextTransformerBranch(nn.Module):
-    def __init__(self, in_channels=320, d_model=128, nhead=4, num_layers=2, dropout=0.1):
+    def __init__(self, in_ch=320, d=128, heads=4, layers=2, drop=0.1):
         super().__init__()
-        self.d_model    = d_model
-        self.input_proj = nn.Sequential(
-            nn.Conv2d(in_channels, d_model, kernel_size=1, bias=False),
-            nn.BatchNorm2d(d_model), nn.GELU()
-        )
-        self.cls_token = nn.Parameter(torch.zeros(1, 1, d_model))
-        self.pos_embed = nn.Parameter(torch.zeros(1, 50, d_model))
-        nn.init.trunc_normal_(self.cls_token, std=0.02)
-        nn.init.trunc_normal_(self.pos_embed, std=0.02)
-        encoder_layer  = nn.TransformerEncoderLayer(
-            d_model=d_model, nhead=nhead, dim_feedforward=d_model * 4,
-            dropout=dropout, activation='gelu', batch_first=True, norm_first=True
-        )
-        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
-        self.norm        = nn.LayerNorm(d_model)
+        self.proj      = nn.Sequential(nn.Conv2d(in_ch,d,1,bias=False), nn.BatchNorm2d(d), nn.GELU())
+        self.cls       = nn.Parameter(torch.zeros(1,1,d))
+        self.pos       = nn.Parameter(torch.zeros(1,50,d))
+        nn.init.trunc_normal_(self.cls, std=0.02)
+        nn.init.trunc_normal_(self.pos, std=0.02)
+        enc            = nn.TransformerEncoderLayer(d, heads, d*4, drop, 'gelu', batch_first=True, norm_first=True)
+        self.transformer = nn.TransformerEncoder(enc, layers)
+        self.norm      = nn.LayerNorm(d)
 
     def forward(self, x):
-        B   = x.size(0)
-        x   = self.input_proj(x)
-        x   = x.flatten(2).permute(0, 2, 1)
-        cls = self.cls_token.expand(B, -1, -1)
-        x   = torch.cat([cls, x], dim=1)
-        x   = x + self.pos_embed
-        x   = self.transformer(x)
-        return self.norm(x)[:, 0, :]
+        B = x.size(0)
+        x = self.proj(x).flatten(2).permute(0,2,1)
+        x = torch.cat([self.cls.expand(B,-1,-1), x], 1) + self.pos
+        return self.norm(self.transformer(x))[:,0,:]
 
 
 class AdaptiveFusionGate(nn.Module):
-    def __init__(self, cnn_dim, trans_dim, shared_dim=256):
+    def __init__(self, cd, td, sd=256):
         super().__init__()
-        self.cnn_proj   = nn.Linear(cnn_dim, shared_dim)
-        self.trans_proj = nn.Linear(trans_dim, shared_dim)
-        combined_dim    = cnn_dim + trans_dim
-        self.gate_mlp   = nn.Sequential(
-            nn.Linear(combined_dim, combined_dim // 4), nn.GELU(), nn.Dropout(0.1),
-            nn.Linear(combined_dim // 4, 1), nn.Sigmoid()
-        )
+        self.cp = nn.Linear(cd, sd); self.tp = nn.Linear(td, sd)
+        self.gate = nn.Sequential(nn.Linear(cd+td,(cd+td)//4), nn.GELU(), nn.Dropout(0.1),
+                                  nn.Linear((cd+td)//4,1), nn.Sigmoid())
 
-    def forward(self, cnn_feat, trans_feat):
-        combined = torch.cat([cnn_feat, trans_feat], dim=1)
-        alpha    = self.gate_mlp(combined)
-        cnn_p    = self.cnn_proj(cnn_feat)
-        trans_p  = self.trans_proj(trans_feat)
-        fused    = alpha * cnn_p + (1 - alpha) * trans_p
-        return fused, alpha
+    def forward(self, cf, tf):
+        a = self.gate(torch.cat([cf,tf],1))
+        return a*self.cp(cf)+(1-a)*self.tp(tf), a
 
 
 class DualPathAFNet(nn.Module):
-    def __init__(self, num_classes=6, cnn_out_dim=256, trans_d_model=128,
-                 shared_dim=256, num_layers=2, dropout=0.3):
+    def __init__(self, nc=6, cd=256, td=128, sd=256, nl=2, drop=0.3):
         super().__init__()
         self.stem = timm.create_model('mobilenetv2_100', pretrained=False, features_only=True)
-        self.mscb = ChannelPyramidPooling(in_channels_list=[24, 96, 320], out_dim=cnn_out_dim)
-        self.gctb = GlobalContextTransformerBranch(
-            in_channels=320, d_model=trans_d_model, nhead=4, num_layers=num_layers, dropout=0.1
-        )
-        self.afg  = AdaptiveFusionGate(cnn_dim=cnn_out_dim, trans_dim=trans_d_model, shared_dim=shared_dim)
-        classifier_in = shared_dim + trans_d_model
-        self.classifier = nn.Sequential(
-            nn.LayerNorm(classifier_in), nn.Dropout(dropout),
-            nn.Linear(classifier_in, 256), nn.GELU(),
-            nn.Dropout(dropout / 2), nn.Linear(256, num_classes)
+        self.mscb = ChannelPyramidPooling([24,96,320], cd)
+        self.gctb = GlobalContextTransformerBranch(320, td, 4, nl, 0.1)
+        self.afg  = AdaptiveFusionGate(cd, td, sd)
+        self.head = nn.Sequential(
+            nn.LayerNorm(sd+td), nn.Dropout(drop),
+            nn.Linear(sd+td,256), nn.GELU(), nn.Dropout(drop/2), nn.Linear(256,nc)
         )
 
     def forward(self, x, return_alpha=False):
-        feats      = self.stem(x)
-        s1, s2, s3 = feats[1], feats[3], feats[4]
-        cnn_feat   = self.mscb([s1, s2, s3])
-        trans_feat = self.gctb(s3)
-        fused, alpha = self.afg(cnn_feat, trans_feat)
-        combined   = torch.cat([fused, trans_feat], dim=1)
-        out        = self.classifier(combined)
-        if return_alpha:
-            return out, alpha
-        return out
+        f = self.stem(x)
+        cf = self.mscb([f[1],f[3],f[4]]); tf = self.gctb(f[4])
+        fused, a = self.afg(cf, tf)
+        out = self.head(torch.cat([fused,tf],1))
+        return (out, a) if return_alpha else out
 
 
-# ─────────────────────────────────────────────────────────────
-# CONSTANTS
-# ─────────────────────────────────────────────────────────────
-CLASS_NAMES = ['crazing', 'inclusion', 'patches', 'pitted_surface', 'rolled-in_scale', 'scratches']
-
-CLASS_INFO = {
-    'crazing':        {'desc': 'Network of fine surface cracks, like dried mud', 'color': '#4f9eff'},
-    'inclusion':      {'desc': 'Small foreign particles embedded in the steel surface', 'color': '#7b5cf0'},
-    'patches':        {'desc': 'Irregular rough areas of uneven surface texture', 'color': '#2dd88a'},
-    'pitted_surface': {'desc': 'Small holes or cavity-like indentations on surface', 'color': '#f5a623'},
-    'rolled-in_scale':{'desc': 'Steel flakes pressed into surface during rolling process', 'color': '#ff5f5f'},
-    'scratches':      {'desc': 'Linear score marks running across the surface', 'color': '#e879f9'},
+# ── Constants ─────────────────────────────────────────────────────────────────
+CLASS_NAMES = ['crazing','inclusion','patches','pitted_surface','rolled-in_scale','scratches']
+CLASS_INFO  = {
+    'crazing':         {'desc':'Network of fine surface cracks, like dried mud',          'color':'#5b9cf6'},
+    'inclusion':       {'desc':'Small foreign particles embedded in the steel surface',    'color':'#a78bfa'},
+    'patches':         {'desc':'Irregular rough areas of uneven surface texture',          'color':'#4ade80'},
+    'pitted_surface':  {'desc':'Small holes or cavity-like indentations on surface',       'color':'#fbbf24'},
+    'rolled-in_scale': {'desc':'Steel flakes pressed into surface during rolling',         'color':'#f87171'},
+    'scratches':       {'desc':'Linear score marks running across the surface',            'color':'#e879f9'},
 }
-
-# Known alpha values from your research (mean gate values per class)
-KNOWN_ALPHA = {
-    'crazing':         0.971,
-    'inclusion':       0.343,
-    'patches':         0.975,
-    'pitted_surface':  0.821,
-    'rolled-in_scale': 0.895,
-    'scratches':       0.615,
-}
-
-IMAGENET_MEAN = [0.485, 0.456, 0.406]
-IMAGENET_STD  = [0.229, 0.224, 0.225]
-
-MODEL_PATH = "DualPathAFNet_v2_best.pth"   # ← put your checkpoint here
+KNOWN_ALPHA = {'crazing':0.971,'inclusion':0.343,'patches':0.975,
+               'pitted_surface':0.821,'rolled-in_scale':0.895,'scratches':0.615}
+MODEL_PATH  = "DualPathAFNet_v2_best.pth"
 
 
-# ─────────────────────────────────────────────────────────────
-# MODEL LOADING
-# ─────────────────────────────────────────────────────────────
+# ── Load model ────────────────────────────────────────────────────────────────
 @st.cache_resource(show_spinner=False)
 def load_model():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model  = DualPathAFNet(
-        num_classes=6, cnn_out_dim=256, trans_d_model=128,
-        shared_dim=256, num_layers=2, dropout=0.3
-    ).to(device)
-
+    model  = DualPathAFNet().to(device)
+    loaded = False
     if os.path.exists(MODEL_PATH):
-        state = torch.load(MODEL_PATH, map_location=device)
-        model.load_state_dict(state)
-        model_loaded = True
-    else:
-        model_loaded = False   # demo mode — random weights
-
+        model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+        loaded = True
     model.eval()
-    return model, device, model_loaded
+    return model, device, loaded
 
 
-# ─────────────────────────────────────────────────────────────
-# PREPROCESSING
-# ─────────────────────────────────────────────────────────────
-def preprocess(image: Image.Image):
-    img = image.convert("RGB").resize((224, 224), Image.BILINEAR)
-    arr = np.array(img, dtype=np.float32) / 255.0
-    arr = (arr - IMAGENET_MEAN) / IMAGENET_STD
-    tensor = torch.from_numpy(arr).permute(2, 0, 1).unsqueeze(0).float()
-    return tensor
+# ── Inference ─────────────────────────────────────────────────────────────────
+def preprocess(img):
+    img = img.convert("RGB").resize((224,224), Image.BILINEAR)
+    arr = (np.array(img, dtype=np.float32)/255.0 - [0.485,0.456,0.406]) / [0.229,0.224,0.225]
+    return torch.from_numpy(arr).permute(2,0,1).unsqueeze(0).float()
+
+def predict(model, device, image):
+    t = preprocess(image).to(device)
+    t0 = time.perf_counter()
+    with torch.no_grad():
+        logits, alpha = model(t, return_alpha=True)
+    lat   = (time.perf_counter()-t0)*1000
+    probs = torch.softmax(logits,1).squeeze().cpu().numpy()
+    a     = float(alpha.squeeze().cpu().item())
+    idx   = int(np.argmax(probs))
+    return CLASS_NAMES[idx], float(probs[idx]), probs, a, lat
 
 
-# ─────────────────────────────────────────────────────────────
-# INFERENCE
-# ─────────────────────────────────────────────────────────────
-def predict(model, device, image: Image.Image):
-    tensor = preprocess(image).to(device)
+# ── Charts ────────────────────────────────────────────────────────────────────
+BG = '#13161f'
 
-    if device.type == "cuda":
-        # warm-up
-        with torch.no_grad():
-            for _ in range(3):
-                model(tensor)
-        torch.cuda.synchronize()
-        t0 = time.perf_counter()
-        with torch.no_grad():
-            logits, alpha = model(tensor, return_alpha=True)
-        torch.cuda.synchronize()
-        latency_ms = (time.perf_counter() - t0) * 1000
-    else:
-        t0 = time.perf_counter()
-        with torch.no_grad():
-            logits, alpha = model(tensor, return_alpha=True)
-        latency_ms = (time.perf_counter() - t0) * 1000
+def conf_chart(probs):
+    fig, ax = plt.subplots(figsize=(6,2.8)); fig.patch.set_facecolor(BG); ax.set_facecolor(BG)
+    idx   = np.argsort(probs)
+    names = [CLASS_NAMES[i].replace('_',' ').replace('-in','\n-in') for i in idx]
+    vals  = [probs[i] for i in idx]
+    cols  = ['#3d7aed' if i==np.argmax(probs) else '#1e2330' for i in idx]
+    ax.barh(names, vals, color=cols, height=0.55, zorder=3)
+    ax.set_xlim(0, 1.08); ax.set_xlabel('Confidence', color='#5a6478', fontsize=9)
+    ax.tick_params(colors='#5a6478', labelsize=9)
+    for spine in ax.spines.values(): spine.set_edgecolor('#1e2330')
+    for bar, v in zip(ax.patches, vals):
+        ax.text(v+0.02, bar.get_y()+bar.get_height()/2, f'{v:.1%}', va='center', color='#5a6478', fontsize=9)
+    ax.grid(axis='x', color='#1e2330', lw=0.7, zorder=1)
+    plt.tight_layout(); buf=io.BytesIO()
+    plt.savefig(buf, format='png', dpi=130, bbox_inches='tight', facecolor=BG)
+    buf.seek(0); plt.close(); return buf
 
-    probs       = torch.softmax(logits, dim=1).squeeze().cpu().numpy()
-    alpha_val   = float(alpha.squeeze().cpu().item())
-    pred_idx    = int(np.argmax(probs))
-    pred_class  = CLASS_NAMES[pred_idx]
-    confidence  = float(probs[pred_idx])
-
-    return pred_class, confidence, probs, alpha_val, latency_ms
-
-
-# ─────────────────────────────────────────────────────────────
-# ALPHA GATE CHART
-# ─────────────────────────────────────────────────────────────
-def make_alpha_chart(predicted_class, alpha_val):
-    fig, ax = plt.subplots(figsize=(7, 3))
-    fig.patch.set_facecolor('#161b22')
-    ax.set_facecolor('#161b22')
-
-    classes    = list(KNOWN_ALPHA.keys())
-    alphas     = list(KNOWN_ALPHA.values())
-    colors     = ['#4f9eff' if a > 0.5 else '#7b5cf0' for a in alphas]
-    edge_colors = ['#f0f6fc' if c == predicted_class else 'none' for c in classes]
-    edge_widths = [2 if c == predicted_class else 0 for c in classes]
-
-    bars = ax.bar(classes, alphas, color=colors, edgecolor=edge_colors,
-                  linewidth=edge_widths, zorder=3, width=0.6)
-    ax.axhline(0.5, color='#30363d', linestyle='--', lw=1.2, zorder=2)
-    ax.axhline(alpha_val, color='#f5a623', linestyle='-', lw=1.5,
-               zorder=4, alpha=0.7)
-
-    ax.set_ylim(0, 1.05)
-    ax.set_ylabel('α value', color='#8b949e', fontsize=10)
-    ax.tick_params(colors='#8b949e', labelsize=9)
-    ax.set_xticklabels([c.replace('_', '\n').replace('-in', '\n-in') for c in classes],
-                       fontsize=8, color='#8b949e')
-    for spine in ax.spines.values():
-        spine.set_edgecolor('#30363d')
-
-    p1 = mpatches.Patch(color='#4f9eff', label='CNN-dominant (α > 0.5)')
-    p2 = mpatches.Patch(color='#7b5cf0', label='Transformer-dominant (α < 0.5)')
-    p3 = mpatches.Patch(color='#f5a623', label=f'Current prediction α={alpha_val:.3f}')
-    ax.legend(handles=[p1, p2, p3], fontsize=8, facecolor='#161b22',
-              edgecolor='#30363d', labelcolor='#8b949e', loc='upper right')
-    ax.set_title('Adaptive Fusion Gate — per-class α values', color='#8b949e',
-                 fontsize=10, pad=10)
-
-    plt.tight_layout()
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png', dpi=130, bbox_inches='tight',
-                facecolor='#161b22')
-    buf.seek(0)
-    plt.close()
-    return buf
+def alpha_chart(pred_class, alpha_val):
+    fig, ax = plt.subplots(figsize=(6,2.8)); fig.patch.set_facecolor(BG); ax.set_facecolor(BG)
+    classes = list(KNOWN_ALPHA.keys()); alphas = list(KNOWN_ALPHA.values())
+    cols  = ['#3d7aed' if a>0.5 else '#8b5cf6' for a in alphas]
+    edges = ['#e8ecf4' if c==pred_class else 'none' for c in classes]
+    lws   = [2 if c==pred_class else 0 for c in classes]
+    ax.bar(range(len(classes)), alphas, color=cols, edgecolor=edges, linewidth=lws, zorder=3, width=0.55)
+    ax.axhline(0.5, color='#2a3040', ls='--', lw=1.2, zorder=2)
+    ax.axhline(alpha_val, color='#fbbf24', ls='-', lw=1.5, zorder=4, alpha=0.8)
+    ax.set_xticks(range(len(classes)))
+    ax.set_xticklabels([c.replace('_','\n').replace('-in','\n-in') for c in classes], fontsize=7.5, color='#5a6478')
+    ax.set_ylim(0,1.08); ax.set_ylabel('α', color='#5a6478', fontsize=9)
+    ax.tick_params(colors='#5a6478', labelsize=9)
+    for spine in ax.spines.values(): spine.set_edgecolor('#1e2330')
+    p1=mpatches.Patch(color='#3d7aed',label='CNN-dominant')
+    p2=mpatches.Patch(color='#8b5cf6',label='Transformer-dominant')
+    p3=mpatches.Patch(color='#fbbf24',label=f'This image α={alpha_val:.3f}')
+    ax.legend(handles=[p1,p2,p3], fontsize=7.5, facecolor=BG, edgecolor='#1e2330',
+              labelcolor='#8892a4', loc='upper right')
+    plt.tight_layout(); buf=io.BytesIO()
+    plt.savefig(buf, format='png', dpi=130, bbox_inches='tight', facecolor=BG)
+    buf.seek(0); plt.close(); return buf
 
 
-# ─────────────────────────────────────────────────────────────
-# CONFIDENCE CHART
-# ─────────────────────────────────────────────────────────────
-def make_confidence_chart(probs):
-    fig, ax = plt.subplots(figsize=(7, 3))
-    fig.patch.set_facecolor('#161b22')
-    ax.set_facecolor('#161b22')
-
-    sorted_idx    = np.argsort(probs)[::-1]
-    sorted_names  = [CLASS_NAMES[i].replace('_', ' ').replace('-in', '\n-in') for i in sorted_idx]
-    sorted_probs  = [probs[i] for i in sorted_idx]
-    bar_colors    = ['#4f9eff' if i == 0 else '#30363d' for i in range(len(sorted_probs))]
-
-    bars = ax.barh(sorted_names[::-1], sorted_probs[::-1],
-                   color=bar_colors[::-1], height=0.6, zorder=3)
-    ax.set_xlim(0, 1.05)
-    ax.set_xlabel('Confidence', color='#8b949e', fontsize=10)
-    ax.tick_params(colors='#8b949e', labelsize=9)
-    for spine in ax.spines.values():
-        spine.set_edgecolor('#30363d')
-    for bar, prob in zip(bars, sorted_probs[::-1]):
-        ax.text(min(prob + 0.02, 1.0), bar.get_y() + bar.get_height()/2,
-                f'{prob:.1%}', va='center', color='#8b949e', fontsize=9)
-    ax.set_title('Classification confidence', color='#8b949e', fontsize=10, pad=10)
-    ax.grid(axis='x', color='#21262d', lw=0.7, zorder=1)
-
-    plt.tight_layout()
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png', dpi=130, bbox_inches='tight', facecolor='#161b22')
-    buf.seek(0)
-    plt.close()
-    return buf
-
-
-# ─────────────────────────────────────────────────────────────
-# SIDEBAR
-# ─────────────────────────────────────────────────────────────
-def render_sidebar():
+# ── Sidebar ───────────────────────────────────────────────────────────────────
+def sidebar():
     with st.sidebar:
         st.markdown("""
-        <div style='text-align:center;margin-bottom:24px'>
-          <div style='font-family:Syne,sans-serif;font-size:20px;font-weight:800;
-                      color:#f0f6fc;margin-bottom:4px'>SteelScan AI</div>
-          <div style='font-size:11px;color:#484f58;font-family:DM Mono,monospace;
-                      letter-spacing:0.1em'>SURFACE DEFECT DETECTION</div>
+        <div style="font-family:'Inter',sans-serif;font-size:24px;font-weight:700;
+                    color:#e8ecf4;letter-spacing:-0.02em;margin-bottom:2px">SteelScan</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#3d4658;
+                    letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px">
+          Research Prototype · NEU Surface Defect Dataset
         </div>
+        <div style="font-size:11px;color:#3d4658;line-height:1.6;
+                    margin-bottom:20px;font-style:italic;border-left:2px solid #1e2330;padding-left:10px">
+          Deep Learning Models for Real-Time Industrial Surface Defect Detection
+        </div>
+        <hr style="border:none;border-top:1px solid #1e2330;margin:16px 0">
         """, unsafe_allow_html=True)
 
-        st.markdown('<div class="section-title">Model</div>', unsafe_allow_html=True)
-        st.markdown('<span class="tag tag-green">DualPath-AFNet v2</span>', unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown('<div class="section-label">Model performance</div>', unsafe_allow_html=True)
+        c1, c2 = st.columns(2)
+        with c1: st.metric("Accuracy","89.26%"); st.metric("FPS","131")
+        with c2: st.metric("F1 Score","0.890");  st.metric("Size","13.9 MB")
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Accuracy", "89.26%")
-            st.metric("FPS", "131")
-        with col2:
-            st.metric("F1 Score", "0.890")
-            st.metric("Size", "13.9 MB")
-
-        st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
-        st.markdown('<div class="section-title">Architecture</div>', unsafe_allow_html=True)
+        st.markdown('<hr style="border:none;border-top:1px solid #1e2330;margin:16px 0">', unsafe_allow_html=True)
+        st.markdown('<div class="section-label">Architecture</div>', unsafe_allow_html=True)
         st.markdown("""
-        <div style='font-size:12px;color:#8b949e;line-height:2;'>
-          <span class='tag tag-blue'>CNN Branch</span> Multi-Scale Pyramid<br>
-          <span class='tag tag-purple'>Transformer</span> CLS Token + Self-Attention<br>
-          <span class='tag tag-green'>AFG Gate</span> Adaptive α per sample<br>
-          <span style='color:#484f58'>Backbone: MobileNetV2 (pretrained)</span><br>
-          <span style='color:#484f58'>Params: 3.58M · Layers: 2 Transformer</span>
+        <div class="arch-step"><div class="arch-dot" style="background:#3d7aed"></div>
+          <div class="arch-text"><b>CNN Branch</b> — Multi-Scale Pyramid Pooling</div></div>
+        <div class="arch-step"><div class="arch-dot" style="background:#8b5cf6"></div>
+          <div class="arch-text"><b>Transformer Branch</b> — CLS Token + Self-Attention</div></div>
+        <div class="arch-step"><div class="arch-dot" style="background:#22c55e"></div>
+          <div class="arch-text"><b>Adaptive Gate (AFG)</b> — Learnable α per sample</div></div>
+        <div style="font-size:11px;color:#3d4658;margin-top:8px;line-height:1.7">
+          Backbone: MobileNetV2 (pretrained)<br>Params: 3.58M · Layers: 2 Transformer
         </div>
         """, unsafe_allow_html=True)
 
-        st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
-        st.markdown('<div class="section-title">Defect Classes</div>', unsafe_allow_html=True)
+        st.markdown('<hr style="border:none;border-top:1px solid #1e2330;margin:16px 0">', unsafe_allow_html=True)
+        st.markdown('<div class="section-label">Defect classes</div>', unsafe_allow_html=True)
         for cls, info in CLASS_INFO.items():
             st.markdown(f"""
-            <div style='display:flex;gap:8px;align-items:flex-start;
-                        margin-bottom:10px;padding-bottom:10px;
-                        border-bottom:1px solid #21262d'>
-              <div style='width:3px;height:32px;border-radius:2px;
-                          background:{info["color"]};flex-shrink:0;margin-top:2px'></div>
+            <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:9px;
+                        padding-bottom:9px;border-bottom:1px solid #1a1e28">
+              <div style="width:3px;min-height:34px;border-radius:2px;
+                          background:{info['color']};flex-shrink:0;margin-top:2px"></div>
               <div>
-                <div style='font-size:12px;font-weight:500;color:#f0f6fc;
-                            text-transform:capitalize;margin-bottom:2px'>
-                  {cls.replace("_", " ").replace("-in", "-in ")}
+                <div style="font-size:12px;font-weight:500;color:#c4cad6;
+                            text-transform:capitalize;margin-bottom:1px">
+                  {cls.replace('_',' ')}
                 </div>
-                <div style='font-size:11px;color:#484f58;line-height:1.4'>{info["desc"]}</div>
+                <div style="font-size:11px;color:#3d4658;line-height:1.4">{info['desc']}</div>
               </div>
             </div>
             """, unsafe_allow_html=True)
 
-        st.markdown('<hr class="divider">', unsafe_allow_html=True)
         st.markdown("""
-        <div style='font-size:11px;color:#484f58;text-align:center;line-height:1.6'>
-          Devyani Ghildiyal · Reg. 229301091<br>
-          Manipal University Jaipur<br>
-          Guide: Dr. Anil Kumar
+        <hr style="border:none;border-top:1px solid #1e2330;margin:16px 0">
+        <div style="font-size:11px;color:#3d4658;line-height:1.7">
+          Devyani Ghildiyal · Reg. 229301091<br>Manipal University Jaipur<br>Guide: Dr. Anil Kumar
         </div>
         """, unsafe_allow_html=True)
 
 
-# ─────────────────────────────────────────────────────────────
-# MAIN APP
-# ─────────────────────────────────────────────────────────────
+# ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    render_sidebar()
+    sidebar()
 
-    # ── Hero ──────────────────────────────────────────────────
+    # Title
     st.markdown("""
-    <div style='margin-bottom:32px'>
-      <div style='font-family:DM Mono,monospace;font-size:11px;color:#4f9eff;
-                  letter-spacing:0.15em;margin-bottom:12px'>
-        RESEARCH PROTOTYPE · NEU SURFACE DEFECT DATASET
-      </div>
-      <div class='hero-title'>Steel Surface<br><span style='color:#4f9eff'>Defect Detection</span></div>
-      <div class='hero-sub'>
-        Upload a steel surface image and DualPath-AFNet will classify the defect type,
-        show per-class confidence scores, and reveal which branch — CNN or Transformer —
-        the Adaptive Fusion Gate relied on for this specific image.
-      </div>
+    <div class="app-title">SteelScan</div>
+    <div class="app-subtitle">
+      Prototype for the research paper —
+      <em>"Deep Learning Models for Real-Time Industrial Surface Defect Detection"</em>
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Load model ────────────────────────────────────────────
+    # About section (at top)
+    with st.expander("About DualPath-AFNet — how this model works", expanded=False):
+        c1,c2,c3 = st.columns(3)
+        with c1:
+            st.markdown("""<div class="card">
+              <span class="tag tag-blue">CNN Branch</span>
+              <div style="margin-top:10px;font-size:13px;color:#8892a4;line-height:1.7">
+                Uses MobileNetV2 features at 3 scales (56×56, 14×14, 7×7) and pools them
+                into a 256-dim local feature vector. Captures textures, edges, and fine-grain patterns.
+              </div></div>""", unsafe_allow_html=True)
+        with c2:
+            st.markdown("""<div class="card">
+              <span class="tag tag-purple">Transformer Branch</span>
+              <div style="margin-top:10px;font-size:13px;color:#8892a4;line-height:1.7">
+                Treats the 7×7 feature map as 49 tokens, prepends a CLS token, and runs
+                2 self-attention layers. Captures long-range spatial relationships across the image.
+              </div></div>""", unsafe_allow_html=True)
+        with c3:
+            st.markdown("""<div class="card">
+              <span class="tag tag-green">Adaptive Fusion Gate</span>
+              <div style="margin-top:10px;font-size:13px;color:#8892a4;line-height:1.7">
+                Computes a per-sample scalar α. Inclusion (α=0.343) is Transformer-dominant.
+                Texture defects like patches (α=0.975) are CNN-dominant — learned automatically.
+              </div></div>""", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Model status
     with st.spinner("Loading DualPath-AFNet..."):
-        model, device, model_loaded = load_model()
+        model, device, loaded = load_model()
 
-    if not model_loaded:
-        st.markdown("""
-        <div class='warning-box'>
-          ⚠️ <strong>Demo mode:</strong> Model checkpoint <code>DualPathAFNet_v2_best.pth</code>
-          not found. Running with random weights — predictions will not be meaningful.
-          Place your trained checkpoint in the same folder as this app and restart.
-        </div>
-        """, unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
+    dlabel = "GPU (CUDA)" if device.type=="cuda" else "CPU"
+    dnote  = "" if device.type=="cuda" else \
+             " — Expected for web deployment. GPU is used during training on Kaggle."
+
+    if loaded:
+        st.markdown(f"""<div class="info-box">
+          ✅ <strong>DualPath-AFNet v2 loaded</strong> · 3.58M parameters ·
+          Running on <strong>{dlabel}</strong>{dnote}
+        </div>""", unsafe_allow_html=True)
     else:
-        st.markdown("""
-        <div class='info-box'>
-          ✅ <strong>Model loaded successfully.</strong>
-          DualPath-AFNet v2 · 3.58M parameters · Running on
-        """ + f"{'GPU (CUDA)' if device.type == 'cuda' else 'CPU'}</div>",
-        unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(f"""<div class="warn-box">
+          ⚠️ <strong>Demo mode</strong> — <code>DualPathAFNet_v2_best.pth</code> not found.
+          Place it in the same folder as app.py. Running on {dlabel}.
+        </div>""", unsafe_allow_html=True)
 
-    # ── Upload + Results ──────────────────────────────────────
-    col_left, col_right = st.columns([1, 1], gap="large")
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    with col_left:
-        st.markdown('<div class="section-title">Upload Image</div>', unsafe_allow_html=True)
+    # Upload + Results
+    col_l, col_r = st.columns([1,1], gap="large")
 
-        uploaded = st.file_uploader(
-            "Drop a steel surface image here",
-            type=["png", "jpg", "jpeg", "bmp", "tiff"],
-            label_visibility="collapsed"
-        )
-
+    with col_l:
+        st.markdown('<div class="section-label">Upload image</div>', unsafe_allow_html=True)
+        uploaded = st.file_uploader("Upload", type=["png","jpg","jpeg","bmp","tiff","tif"],
+                                    label_visibility="collapsed")
         if uploaded:
             image = Image.open(uploaded).convert("RGB")
             st.image(image, caption="Uploaded image", use_column_width=True)
-
-            # Image metadata
             w, h = image.size
             st.markdown(f"""
-            <div style='display:flex;gap:8px;margin-top:8px;flex-wrap:wrap'>
-              <span class='tag tag-blue'>{w}×{h}px</span>
-              <span class='tag tag-blue'>{uploaded.type}</span>
-              <span class='tag tag-blue'>{uploaded.size/1024:.1f} KB</span>
-            </div>
-            """, unsafe_allow_html=True)
+            <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+              <span class="tag tag-gray">{w}×{h}px</span>
+              <span class="tag tag-gray">{uploaded.type.split('/')[-1].upper()}</span>
+              <span class="tag tag-gray">{uploaded.size/1024:.1f} KB</span>
+            </div>""", unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
-
-            analyse_btn = st.button("🔬  Analyse Defect", key="analyse")
-
+            run = st.button("🔬  Analyse Defect")
         else:
-            st.markdown("""
-            <div style='background:#161b22;border:1.5px dashed #30363d;
-                        border-radius:12px;padding:60px 24px;text-align:center'>
-              <div style='font-size:32px;margin-bottom:12px;opacity:0.3'>🔬</div>
-              <div style='font-size:14px;color:#484f58'>
-                Upload a steel surface image to begin analysis
-              </div>
-              <div style='font-size:12px;color:#30363d;margin-top:6px'>
-                PNG, JPG, BMP, TIFF supported
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-            analyse_btn = False
+            st.markdown("""<div class="empty-state">
+              <div style="font-size:28px;opacity:0.15;margin-bottom:10px">⬆</div>
+              <div style="font-size:14px;color:#3d4658">Upload a steel surface image to begin</div>
+              <div style="font-size:12px;color:#2a3040;margin-top:4px">PNG · JPG · BMP · TIFF supported</div>
+            </div>""", unsafe_allow_html=True)
+            run = False
 
-    with col_right:
-        st.markdown('<div class="section-title">Analysis Results</div>', unsafe_allow_html=True)
+    with col_r:
+        st.markdown('<div class="section-label">Analysis results</div>', unsafe_allow_html=True)
 
-        if uploaded and analyse_btn:
+        if uploaded and run:
             with st.spinner("Analysing..."):
-                pred_class, confidence, probs, alpha_val, latency_ms = predict(
-                    model, device, image
-                )
+                pred, conf, probs, av, lat = predict(model, device, image)
 
-            # ── Prediction result ──────────────────────────
-            cls_color = CLASS_INFO[pred_class]['color']
-            cls_desc  = CLASS_INFO[pred_class]['desc']
+            color    = CLASS_INFO[pred]['color']
+            desc     = CLASS_INFO[pred]['desc']
+            cpct     = av * 100
+            tpct     = (1-av) * 100
+            branch   = "CNN branch" if av > 0.5 else "Transformer branch"
+            btag     = "tag-blue"   if av > 0.5 else "tag-purple"
 
-            st.markdown(f"""
-            <div class='result-card'>
-              <div style='font-size:11px;color:#484f58;font-family:DM Mono,monospace;
-                          letter-spacing:.1em;margin-bottom:8px'>PREDICTED CLASS</div>
-              <div class='result-header' style='color:{cls_color}'>
-                {pred_class.replace("_", " ").replace("-in", "-in ")}
+            st.markdown(f"""<div class="card">
+              <div class="section-label">Predicted class</div>
+              <div class="result-class" style="color:{color}">
+                {pred.replace('_',' ')}
               </div>
-              <div class='result-conf'>Confidence: {confidence:.1%}</div>
-              <div style='background:#0d1117;border-radius:6px;height:6px;overflow:hidden;margin-bottom:16px'>
-                <div style='height:100%;width:{confidence*100:.1f}%;
-                            background:linear-gradient(90deg,{cls_color},#2dd88a);
-                            border-radius:6px;transition:width .8s'></div>
+              <div class="result-conf">Confidence {conf:.1%}</div>
+              <div style="background:#0d1017;border-radius:5px;height:5px;overflow:hidden;margin-bottom:14px">
+                <div style="height:100%;width:{conf*100:.1f}%;
+                            background:linear-gradient(90deg,{color},#22c55e);border-radius:5px"></div>
               </div>
-              <div style='font-size:13px;color:#8b949e;line-height:1.6'>{cls_desc}</div>
-            </div>
-            """, unsafe_allow_html=True)
+              <div style="font-size:13px;color:#5a6478;line-height:1.6">{desc}</div>
+            </div>""", unsafe_allow_html=True)
 
-            # ── Stats row ──────────────────────────────────
-            m1, m2, m3 = st.columns(3)
-            with m1: st.metric("Confidence", f"{confidence:.1%}")
-            with m2: st.metric("Latency", f"{latency_ms:.1f} ms")
-            with m3: st.metric("Gate α", f"{alpha_val:.3f}")
+            m1,m2,m3 = st.columns(3)
+            with m1: st.metric("Confidence", f"{conf:.1%}")
+            with m2: st.metric("Latency",    f"{lat:.0f} ms")
+            with m3: st.metric("Gate α",     f"{av:.3f}")
 
             st.markdown("<br>", unsafe_allow_html=True)
-
-            # ── Confidence chart ───────────────────────────
-            st.markdown('<div class="section-title">All Class Scores</div>', unsafe_allow_html=True)
-            conf_buf = make_confidence_chart(probs)
-            st.image(conf_buf, use_column_width=True)
+            st.markdown('<div class="section-label">All class scores</div>', unsafe_allow_html=True)
+            st.image(conf_chart(probs), use_column_width=True)
 
             st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown('<div class="section-label">Adaptive fusion gate</div>', unsafe_allow_html=True)
 
-            # ── Alpha gate explanation ─────────────────────
-            st.markdown('<div class="section-title">Adaptive Fusion Gate Analysis</div>',
-                        unsafe_allow_html=True)
+            insight = ('The model is using <strong style="color:#5b9cf6">local texture features</strong> '
+                       'from the CNN branch — typical for texture-based defects.'
+                       if av > 0.5 else
+                       'The model is using <strong style="color:#a78bfa">global spatial context</strong> '
+                       'from the Transformer branch — the defect requires whole-image reasoning.')
 
-            cnn_pct   = alpha_val * 100
-            trans_pct = (1 - alpha_val) * 100
-            branch    = "CNN branch" if alpha_val > 0.5 else "Transformer branch"
-            branch_tag = "tag-blue" if alpha_val > 0.5 else "tag-purple"
+            st.markdown(f"""<div class="card">
+              <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+                <span class="tag {btag}">{branch} dominant</span>
+                <span class="mono" style="color:#3d4658">α = {av:.3f}</span>
+              </div>
+              <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;
+                          margin-bottom:6px;background:#0d1017">
+                <div style="width:{cpct:.1f}%;background:#3d7aed;border-radius:4px 0 0 4px"></div>
+                <div style="width:{tpct:.1f}%;background:#8b5cf6;border-radius:0 4px 4px 0"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+                <span class="mono" style="color:#5b9cf6">CNN {cpct:.0f}%</span>
+                <span class="mono" style="color:#a78bfa">Transformer {tpct:.0f}%</span>
+              </div>
+              <div style="font-size:12px;color:#5a6478;line-height:1.7;
+                          padding-top:10px;border-top:1px solid #1e2330">{insight}</div>
+            </div>""", unsafe_allow_html=True)
 
-            st.markdown(f"""
-            <div class='result-card'>
-              <div style='display:flex;gap:8px;align-items:center;margin-bottom:12px'>
-                <span class='tag {branch_tag}'>{branch} dominant</span>
-                <span style='font-size:12px;color:#484f58'>α = {alpha_val:.3f}</span>
-              </div>
-              <div style='display:flex;height:10px;border-radius:5px;overflow:hidden;
-                          margin-bottom:8px;background:#0d1117'>
-                <div style='width:{cnn_pct:.1f}%;background:#4f9eff;height:100%;
-                            border-radius:5px 0 0 5px'></div>
-                <div style='width:{trans_pct:.1f}%;background:#7b5cf0;height:100%;
-                            border-radius:0 5px 5px 0'></div>
-              </div>
-              <div style='display:flex;justify-content:space-between;
-                          font-size:11px;margin-bottom:14px;font-family:DM Mono,monospace'>
-                <span style='color:#4f9eff'>CNN {cnn_pct:.0f}%</span>
-                <span style='color:#7b5cf0'>Transformer {trans_pct:.0f}%</span>
-              </div>
-              <div style='font-size:12px;color:#8b949e;line-height:1.7;
-                          padding-top:12px;border-top:1px solid #21262d'>
-                {'The model is primarily using <strong style="color:#4f9eff">local texture features</strong> from the CNN branch. This is typical for defects with strong distinctive local patterns.' if alpha_val > 0.5
-                 else 'The model is primarily using <strong style="color:#7b5cf0">global spatial context</strong> from the Transformer branch. This means the defect requires understanding how features are distributed across the whole image — characteristic of inclusion defects.'}
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # ── Alpha chart ────────────────────────────────
-            with st.expander("View full per-class gate analysis chart"):
-                alpha_buf = make_alpha_chart(pred_class, alpha_val)
-                st.image(alpha_buf, use_column_width=True)
+            with st.expander("Per-class gate analysis chart"):
+                st.image(alpha_chart(pred, av), use_column_width=True)
                 st.markdown("""
-                <div style='font-size:12px;color:#484f58;margin-top:8px;line-height:1.6'>
-                  Orange line = gate value for this prediction.
-                  Highlighted bar = predicted class.
-                  Inclusion (α=0.343) is the only class where the Transformer dominates —
-                  this is the novel finding of DualPath-AFNet.
-                </div>
-                """, unsafe_allow_html=True)
-
+                <div style="font-size:11px;color:#3d4658;margin-top:6px;line-height:1.6">
+                  Yellow line = this image's gate value. Highlighted bar = predicted class.
+                  Inclusion (α=0.343) is the only Transformer-dominant class —
+                  the novel finding of DualPath-AFNet.
+                </div>""", unsafe_allow_html=True)
         else:
-            st.markdown("""
-            <div style='background:#161b22;border:1px solid #21262d;
-                        border-radius:16px;padding:60px 24px;text-align:center;height:100%'>
-              <div style='font-size:32px;margin-bottom:12px;opacity:0.2'>📊</div>
-              <div style='font-size:14px;color:#484f58;line-height:1.6'>
-                Results will appear here after analysis.<br>
-                Upload an image and click Analyse.
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-    # ── About section ──────────────────────────────────────────
-    st.markdown("<br>", unsafe_allow_html=True)
-    with st.expander("About DualPath-AFNet — how it works"):
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            st.markdown("""
-            <div class='result-card'>
-              <span class='tag tag-blue'>CNN Branch</span>
-              <div style='margin-top:12px;font-size:13px;color:#8b949e;line-height:1.7'>
-                The Multi-Scale CNN Branch (MSCB) uses MobileNetV2 features at 3 different
-                resolutions (56×56, 14×14, 7×7) and pools them into a 256-dim local feature
-                vector. It captures textures, edges, and fine-grain patterns.
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-        with c2:
-            st.markdown("""
-            <div class='result-card'>
-              <span class='tag tag-purple'>Transformer Branch</span>
-              <div style='margin-top:12px;font-size:13px;color:#8b949e;line-height:1.7'>
-                The Global Context Transformer Branch (GCTB) treats the 7×7 feature map as
-                49 tokens, prepends a CLS token, and runs 2 self-attention layers. It captures
-                long-range spatial relationships across the whole image.
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-        with c3:
-            st.markdown("""
-            <div class='result-card'>
-              <span class='tag tag-green'>Adaptive Fusion Gate</span>
-              <div style='margin-top:12px;font-size:13px;color:#8b949e;line-height:1.7'>
-                The AFG computes a per-sample scalar α ∈ (0,1) that dynamically weights
-                the two branches. Inclusion defects (α=0.343) are Transformer-dominant;
-                texture defects like patches (α=0.975) are CNN-dominant.
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown("""<div class="empty-state" style="min-height:400px">
+              <div style="font-size:28px;opacity:0.15;margin-bottom:10px">📊</div>
+              <div style="font-size:14px;color:#3d4658">Results will appear here after analysis</div>
+              <div style="font-size:12px;color:#2a3040;margin-top:4px">Upload an image and click Analyse</div>
+            </div>""", unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
