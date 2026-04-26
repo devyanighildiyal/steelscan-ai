@@ -23,7 +23,7 @@ warnings.filterwarnings("ignore")
 # ─────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="SteelScan AI | Surface Defect Detection",
-    page_icon="🔬",
+    page_icon="🔍",
     layout="wide",
     initial_sidebar_state="expanded"
 )
