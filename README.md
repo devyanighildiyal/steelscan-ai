@@ -189,12 +189,3 @@ Potential directions for further development include:
 | Recognition | Letter of Recommendation (LOR) |
 
 I extend my sincere gratitude to **Prof. Anil Kumar** for his valuable mentorship, technical guidance, and support throughout the development of this project.
-
-## License
-
-A license has not yet been specified. Add a `LICENSE` file if you intend to distribute the project under an open-source license.
-
----
-
-**Developed by Devyani Ghildiyal**  
-*AI • Deep Learning • Computer Vision • Industrial Automation*
